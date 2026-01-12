@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quote Generator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    #quote {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+    }
+    form {
+      margin-top: 30px;
+    }
+    input {
+      display: block;
+      margin: 10px auto;
+      padding: 8px;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Quote Generator</h1>
+
+  <div id="quote">Loading quote...</div>
+  <button id="new-quote">New Quote</button>
+
+  <form id="quote-form">
+    <h2>Add a new quote</h2>
+    <input
+      type="text"
+      id="quote-input"
+      placeholder="Quote"
+      required
+    />
+    <input
+      type="text"
+      id="author-input"
+      placeholder="Author"
+      required
+    />
+    <button type="submit">Add Quote</button>
+  </form>
+
+  <script>
+    const quoteDiv = document.getElementById("quote");
+    const button = document.getElementById("new-quote");
+    const form = document.getElementById("quote-form");
+    const quoteInput = document.getElementById("quote-input");
+    const authorInput = document.getElementById("author-input");
+    
+
+    async function fetchQuote() {
+      const response = await fetch("http://localhost:2000/");
+      const text = await response.text();
+      quoteDiv.textContent = text;
+    }
+
+    button.addEventListener("click", fetchQuote);
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault(); // stop page refresh
+
+      const quote = quoteInput.value;
+      const author = authorInput.value;
+
+      await fetch("http://localhost:2000/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          quote,
+          author
+        })
+      });
+
+      // clear form
+      quoteInput.value = "";
+      authorInput.value = "";
+
+      // show a new random quote (might include the new one)
+      fetchQuote();
+    });
+
+    // Load a quote on page load
+    fetchQuote();
+  </script>
+
+</body>
+</html>
