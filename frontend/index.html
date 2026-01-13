@@ -32,61 +32,65 @@
   <button id="new-quote">New Quote</button>
 
   <form id="quote-form">
-    <h2>Add a new quote Please</h2>
-    <input
-      type="text"
-      id="quote-input"
-      placeholder="Quote"
-      required
-    />
-    <input
-      type="text"
-      id="author-input"
-      placeholder="Author"
-      required
-    />
+    <h2>Add a new quote</h2>
+    <input type="text" id="quote-input" placeholder="Quote" required />
+    <input type="text" id="author-input" placeholder="Author" required />
     <button type="submit">Add Quote</button>
   </form>
 
   <script>
+    // Automatically choose backend URL: localhost for local testing, production otherwise
+    const BACKEND_URL = (window.location.hostname === "" || window.location.hostname.includes("localhost"))
+  ? "http://localhost:2000"
+  : "https://quote-backend.cyf.cool";
+
+
     const quoteDiv = document.getElementById("quote");
     const button = document.getElementById("new-quote");
     const form = document.getElementById("quote-form");
     const quoteInput = document.getElementById("quote-input");
     const authorInput = document.getElementById("author-input");
-    
 
+    // Fetch and display a random quote
     async function fetchQuote() {
-      const response = await fetch("http://localhost:2000/");
-      const text = await response.text();
-      quoteDiv.textContent = text;
+      try {
+        const response = await fetch(`${BACKEND_URL}/`);
+        if (!response.ok) throw new Error("Network response was not ok");
+        const text = await response.text();
+        quoteDiv.textContent = text;
+      } catch (err) {
+        console.error("Failed to fetch quote:", err);
+        quoteDiv.textContent = "Failed to load quote 😢";
+      }
     }
 
+    // Load new quote on button click
     button.addEventListener("click", fetchQuote);
 
+    // Submit new quote via form
     form.addEventListener("submit", async (event) => {
-      event.preventDefault(); // stop page refresh
+      event.preventDefault();
 
-      const quote = quoteInput.value;
-      const author = authorInput.value;
+      const quote = quoteInput.value.trim();
+      const author = authorInput.value.trim();
 
-      await fetch("http://localhost:2000/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          quote,
-          author
-        })
-      });
+      if (!quote || !author) return;
 
-      // clear form
-      quoteInput.value = "";
-      authorInput.value = "";
+      try {
+        const response = await fetch(`${BACKEND_URL}/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ quote, author })
+        });
+        if (!response.ok) throw new Error("Failed to post quote");
 
-      // show a new random quote (might include the new one)
-      fetchQuote();
+        quoteInput.value = "";
+        authorInput.value = "";
+
+        fetchQuote(); // update displayed quote
+      } catch (err) {
+        console.error("Failed to add quote:", err);
+      }
     });
 
     // Load a quote on page load
