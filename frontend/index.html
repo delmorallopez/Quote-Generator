@@ -4,98 +4,107 @@
   <meta charset="UTF-8" />
   <title>Quote Generator</title>
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 50px;
-    }
-    #quote {
-      font-size: 1.2rem;
-      margin-bottom: 20px;
-    }
-    form {
-      margin-top: 30px;
-    }
-    input {
-      display: block;
-      margin: 10px auto;
-      padding: 8px;
-      width: 300px;
-    }
+    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+    #quote { font-size: 1.2rem; margin-bottom: 20px; }
+    form { margin-top: 30px; }
+    input { display: block; margin: 10px auto; padding: 8px; width: 300px; }
+    #feedback { margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
-  <h1>Quote Generator</h1>
+<h1>Quote Generator</h1>
 
-  <div id="quote">Loading quote...</div>
-  <button id="new-quote">New Quote</button>
+<div id="quote">Loading quote...</div>
+<button id="new-quote">New Quote</button>
 
-  <form id="quote-form">
-    <h2>Add a new quote</h2>
-    <input type="text" id="quote-input" placeholder="Quote" required />
-    <input type="text" id="author-input" placeholder="Author" required />
-    <button type="submit">Add Quote</button>
-  </form>
+<!-- Feedback message -->
+<div id="feedback"></div>
 
-  <script>
-    // Automatically choose backend URL: localhost for local testing, production otherwise
-    const BACKEND_URL = (window.location.hostname === "" || window.location.hostname.includes("localhost"))
+<form id="quote-form">
+  <h2>Add a new quote</h2>
+  <input type="text" id="quote-input" placeholder="Quote" required />
+  <input type="text" id="author-input" placeholder="Author" required />
+  <button type="submit">Add Quote</button>
+</form>
+
+<script>
+const BACKEND_URL = window.location.hostname.includes("localhost")
   ? "http://localhost:2000"
-  : "https://quote-backend.cyf.cool";
+  : "https://cg4wc0ooowkg4c40gos8gsk8.hosting.codeyourfuture.io";
 
+const quoteDiv = document.getElementById("quote");
+const button = document.getElementById("new-quote");
+const form = document.getElementById("quote-form");
+const quoteInput = document.getElementById("quote-input");
+const authorInput = document.getElementById("author-input");
+const feedbackDiv = document.getElementById("feedback");
 
-    const quoteDiv = document.getElementById("quote");
-    const button = document.getElementById("new-quote");
-    const form = document.getElementById("quote-form");
-    const quoteInput = document.getElementById("quote-input");
-    const authorInput = document.getElementById("author-input");
+// Fetch a random quote
+async function fetchQuote() {
+  try {
+    const response = await fetch(`${BACKEND_URL}/`);
+    if (!response.ok) throw new Error("Network response was not ok");
+    const text = await response.text();
+    quoteDiv.textContent = text;
+  } catch (err) {
+    console.error("Failed to fetch quote:", err);
+    quoteDiv.textContent = "Failed to load quote";
+  }
+}
 
-    // Fetch and display a random quote
-    async function fetchQuote() {
-      try {
-        const response = await fetch(`${BACKEND_URL}/`);
-        if (!response.ok) throw new Error("Network response was not ok");
-        const text = await response.text();
-        quoteDiv.textContent = text;
-      } catch (err) {
-        console.error("Failed to fetch quote:", err);
-        quoteDiv.textContent = "Failed to load quote 😢";
-      }
-    }
+// Button to load new quote
+button.addEventListener("click", fetchQuote);
 
-    // Load new quote on button click
-    button.addEventListener("click", fetchQuote);
+// Submit new quote
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-    // Submit new quote via form
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
+  const quote = quoteInput.value.trim();
+  const author = authorInput.value.trim();
 
-      const quote = quoteInput.value.trim();
-      const author = authorInput.value.trim();
+  // Frontend validation
+  if (!quote || !author) {
+    feedbackDiv.style.color = "red";
+    feedbackDiv.textContent = "Quote and author cannot be empty!";
+    return;
+  }
 
-      if (!quote || !author) return;
-
-      try {
-        const response = await fetch(`${BACKEND_URL}/`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ quote, author })
-        });
-        if (!response.ok) throw new Error("Failed to post quote");
-
-        quoteInput.value = "";
-        authorInput.value = "";
-
-        fetchQuote(); // update displayed quote
-      } catch (err) {
-        console.error("Failed to add quote:", err);
-      }
+  try {
+    const response = await fetch(`${BACKEND_URL}/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quote, author })
     });
 
-    // Load a quote on page load
+    if (!response.ok) {
+      feedbackDiv.style.color = "red";
+      const errorText = await response.text();
+      feedbackDiv.textContent = `Failed to add quote: ${errorText}`;
+      return;
+    }
+
+    // Success feedback
+    feedbackDiv.style.color = "green";
+    feedbackDiv.textContent = "Quote added successfully!";
+    setTimeout(() => feedbackDiv.textContent = "", 3000);
+
+    // Clear form
+    quoteInput.value = "";
+    authorInput.value = "";
+
+    // Fetch a new random quote
     fetchQuote();
-  </script>
+  } catch (err) {
+    console.error("Error adding quote:", err);
+    feedbackDiv.style.color = "red";
+    feedbackDiv.textContent = "Error connecting to backend. Try again later.";
+  }
+});
+
+// Load a quote on page load
+fetchQuote();
+</script>
 
 </body>
 </html>
